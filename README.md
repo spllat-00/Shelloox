@@ -20,7 +20,7 @@ sudo git clone https://github.com/kalePayas/Shelloox.git /opt/Shelloox; cd /opt/
 ```
 2. Setup permissions
 ```bash
-chmod -R +x *.sh
+sudo chmod -R +x *.sh
 ```
 3. Optional : Setting up alias, in .zshrc orelse .bashrc
 ```bash
