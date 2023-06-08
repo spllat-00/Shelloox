@@ -12,7 +12,7 @@ directory_exists(){
 	# Check if the directory exists
 	if [ ! -d "$directory" ]; then
 		echo "Directory '$directory' does not exist."
-		echo "To create a driectory, use:"
+		echo "To create a directory, use:"
 		echo -e "${DULL_RED}\tmkdir ${directory}${NC}"
 		exit 1
 	fi
