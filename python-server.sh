@@ -2,7 +2,7 @@
 #@Spllat
 
 # Function to handle Ctrl+C
-ctrl_c() {
+ctrl_c(){
 	echo -e "\nExit Command Detected. Stopping the server..."
 	# Add any cleanup or additional actions you need here
 	exit 0
@@ -18,17 +18,33 @@ directory_exists(){
 	fi
 }
 
-print_files() {
+print_files(){
 	local dir="$1"
 	local indent="$2"
+	supported_extensions=("py" "c" "cpp" "php")
 
 	# Iterate over the files and folders in the directory
 	for item in "$dir"/*; do
 		local name=$(basename "$item")
+		local extension="${name##*.}"
 		
 		if [ -f "$item" ]; then
-			# File - print in purple color
-			echo -e "${indent}└── ${PURPLE}$name${NC}"
+			case "$extension" in
+				sh)
+					# Shell script - print in green color
+					echo -e "${indent}└── ${BLUE}$name${NC}"
+					;;
+				py | c | php)
+					# Files with extensions py, c, php - print in purple color
+					echo -e "${indent}└── ${PURPLE}$name${NC}"
+					;;
+				*)
+					# Regular file - print in default color
+					echo -e "${indent}└── $name"
+					;;
+			esac
+
+			
 		elif [ -d "$item" ]; then
 			# Directory - print in yellow color and recursively print its contents
 			echo -e "${indent}├── ${DULL_YELLOW}$name${NC}"
@@ -66,20 +82,51 @@ start_server(){
 	python3 -m http.server "$port" --directory "$directory"
 }
 
+display_help() {
+	echo "Usage: $0 [OPTIONS]"
+	echo "Options:"
+	echo "  -h, --help             Shows this help menu"
+	echo -e "EXAMPLE:"
+	echo -e "   $0"
+}
+
+#--------------------------RUNNER CODE--------------------------
+
+# Flag handling using getopts
+while [[ $# -gt 0 ]]; do
+	case $1 in
+		-h|--help)
+			display_help
+			exit 0
+		;;
+		*)
+			echo "Error: Invalid option: $1"
+			exit 1
+		;;
+	esac
+	shift
+done
+
+
+
 #--------------------------MAIN CODE--------------------------
 
 # Define ANSI color variables
-DULL_RED='\033[0;31m'
-RED='\033[1;31m'
-PURPLE='\033[1;35m'
-DULL_YELLOW='\033[0;33m'
-NC='\033[0m'
+
+C=$(printf '\E')
+DULL_RED="${C}[0;31m"
+RED="${C}[1;31m"
+PURPLE="${C}[1;35m"
+DULL_YELLOW="${C}[0;33m"
+BLUE="${C}[1;32m"
+NC="${C}[0m"
 
 # Trap the SIGINT signal (Ctrl+C)
 trap ctrl_c SIGINT
 
 port=9092
-directory="/home/kali/Documents/important" # Change for custom directory
+scriptFilePath=$(realpath "$0")
+directory="${scriptFilePath%/*}/PythonServer" # Change for custom directory
 
 # tun0 fetcher
 ip_address=$(ip -o -4 addr show tun0 2>/dev/null | awk '{print $4}' | cut -d '/' -f 1)

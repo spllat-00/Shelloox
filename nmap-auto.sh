@@ -39,16 +39,33 @@ provide_suggestions(){
 	echo -e "${YELLOW}Suggestions for further testing${NC}"
 	echo "==============================="
 
+	mediumDirectory=$(locate -r '.*directory-list.*medium.' | grep -m 1 -v 'lowercase')
+	subdomain5000=$(locate -r .*DNS.*subdomains-top1million-5000.txt | head -n 1)
+	
+	if [[ -n "$subdomain5000" || -n "$mediumDirectory" ]]; then
+		echo -e "To know other files for \"$LIGHT_MAGENTA-w$NC\", try running: ${RED}$0 --files${NC}\n"
+	fi
+	
+	# ------ DIR Busting ------
+	if ! [[ -n "$mediumDirectory" ]]; then
+		mediumDirectory="<PATH_TO_DIR/subdomains-top1million-5000.txt>"
+	fi
 	echo -e "  Use gobuster to search for ${DULL_YELLOW}hidden directories${NC}:"
-	echo -e "    ${LIGHT_MAGENTA}gobuster dir -u http://$IP_ADDRESS -w /usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt -t 20${NC}"
+	echo -e "    ${LIGHT_MAGENTA}gobuster dir -u http://$IP_ADDRESS -w $mediumDirectory -t 20${NC}"
 
+
+	# ------ VHOST ------
+	if ! [[ -n "$subdomain5000" ]]; then
+		subdomain5000="<PATH_TO_DNS/subdomains-top1million-5000.txt>"
+	fi
 	echo -e "  Use gobuster to search for ${DULL_YELLOW}virtual hosts${NC}:"
-	echo -e "    ${LIGHT_MAGENTA}gobuster vhost -u http://$IP_ADDRESS -w /usr/share/seclists/SecLists-master/Discovery/DNS/subdomains-top1million-5000.txt -t 20${NC}"
+	echo -e "    ${LIGHT_MAGENTA}gobuster vhost -u http://$IP_ADDRESS -w $subdomain5000 -t 20${NC}"
 
+	# ------ DNS ------
 	echo -e "  Use dnsenum to gather information about ${DULL_YELLOW}DNS${NC}:"
 	echo -e "    ${LIGHT_MAGENTA}dnsenum $IP_ADDRESS${NC}"
 
-	echo "==============================="
+	echo "==============================="	
 	echo
 	echo
 }
@@ -95,44 +112,212 @@ ip_validity(){
 	#	echo -e "${BOLD_RED}Invalid IP address: $IP_ADDRESS${NC}"
 	#	exit 1
 	#fi
-	
-	if ping -c 1 "$IP_ADDRESS" >/dev/null; then
-		echo ""
+
+	ping_output=$(ping -c 1 "$IP_ADDRESS")
+	if [[ $? -eq 0 ]]; then
+		# ttl=$(echo "$ping_output" | grep -oP "(?<=ttl=)\d+")  # Using pcrepattern
+		ttl=$(echo "$ping_output" | grep ttl | awk -F ' ' '{print $6}' | awk -F '=' '{print $2}')
+
+		if [[ $ttl -ge 63 && $ttl -lt 128 ]]; then
+			msg="Operating System: Linux"
+		elif [[ $ttl -ge 128 && $ttl -lt 255 ]]; then
+			msg="Operating System: Windows"
+		elif [[ $ttl -eq 255 ]]; then
+			msg="Operating System: MacOS"
+		else
+			msg="TTL: $ttl\n\tOperating System: Unknown"
+		fi
+		
+		echo -e "${YELLOW}[+]    OS Discovery${NC}"
+		echo -e "\t$msg\n\n"
 	else
 		echo -e "${BOLD_RED}Invalid IP address: $IP_ADDRESS${NC}"
 		exit 1
 	fi
-	
 }
 
-#--------------------------MAIN SCANS--------------------------
+display_help(){
+	echo "Usage: $0 [OPTIONS]"
+	echo "Options:"
+	echo "  -h, --help             Shows help"
+	echo "  -u, --url              URL Field (required)"
+	echo "  -q, --quiet            Do not print the banner on startup"
+	echo "  -fa, --fast-scan       Only fast scan"
+	echo "  -fu, --full-scan       Only full scan"
+	echo -e "MISC:"
+	echo "  --files                Show options for DIR, DNS buster"
+	echo -e "EXAMPLE:"
+	echo -e "   $0 -u 10.0.0.8"
+	echo -e "   $0 -u shelloox.nms.org"
+}
+
+show_files(){
+	echo ""
+
+	# DIR
+	strDIR='.*directory-list.*medium.'
+	
+	mediumDirectory=$(locate -r $strDIR | grep -m 1 -v 'lowercase')
+	
+	restDirFile=$(locate -r $strDIR | tail -n +2 )
+	restDirFile="$(echo -e "$restDirFile" | sed 's/^/\t/')"
+
+	seclistURL="https://github.com/danielmiessler/SecLists"
+
+	echo -e "${YELLOW}[+]    DIR Busting${NC}"
+	echo -e "--------------------------------"
+	if ! [[ -n "$mediumDirectory" ]]; then
+
+		echo -e "No files present with normal name"
+		echo -e "\nSuggestions:\n\t${underline}danielmiessler/SecLists${NC}: ${seclistURL} "
+	else
+		echo -e "${RED}---- Default ----"
+		echo -e "\t${GREEN}${mediumDirectory}${NC}"
+		echo -e "${RED}---Other Options Found---${NC}"
+		echo -e "${restDirFile}"
+	fi
+
+
+	# DNS
+	strDNS='.*DNS.*subdomains-top1million-5000.txt'
+	
+	firstDnsFile=$(locate -r $strDNS | head -n 1)
+	
+	restDnsFile=$(locate -r $strDNS | tail -n +2)
+	restDnsFile="$(echo -e "$restDnsFile" | sed 's/^/\t/')"
+	
+	echo -e "\n${YELLOW}[+]    DNS Busting${NC}"
+	echo -e "--------------------------------"
+	if ! [[ -n "$firstDnsFile" ]]; then
+		echo -e "No files present with normal name"
+		echo -e "\nSuggestions:\n\t${underline}danielmiessler/SecLists${NC}: ${seclistURL} "
+	else
+		echo -e "${RED}---- Default ----"
+		echo -e "\t${GREEN}${firstDnsFile}${NC}"
+		echo -e "${RED}---Other Options Found---${NC}"
+		echo -e "${restDnsFile}"
+	fi
+}
+
+: << COMMENT_TO_DO
+alias_check(){
+	# Function should check if a alias has been set
+	# for nmap-auto.sh for easier use. 
+	# If no alias is set, the script will prompt 
+	# user to add alias or will ask for the user
+	# if it can set a alias with "User given keyword" 
+	echo "HI"
+	command="nmap-auto.sh"
+}
+COMMENT_TO_DO
+
+# --------------------------MAIN START--------------------------
 
 start=$(date +%s.%N)
+
 # Define ANSI color variables
-C=$(printf '\033')
-RED='\033[0;31m'
-LIGHT_RED='\033[1;31m'
-BOLD_RED='\033[1;31m'
+C=$(printf '\E')
+RED="${C}[0;31m"
+BOLD_RED="${C}[1;31m"
 YELLOW="${C}[1;33m"
-DULL_YELLOW='\033[0;33m'
+DULL_YELLOW="${C}[0;33m"
 BLUE="${C}[1;34m"
 LIGHT_MAGENTA="${C}[1;95m"
 GREEN="${C}[1;32m"
-LIGHT_CYAN="${C}[1;96m"
-NC='\033[0m'
-origIFS="${IFS}"
+LIGHT_CYAN="${C}[0;36m"
+NC="${C}[0m"
 ITALIC="${C}[3m"
-BACKGROUND_YELLOW='\033[43m'
+BACKGROUND_YELLOW="${C}[43m"
+BLINK_YELLOW="${C}[5;33m"
+
+underline="${C}[4m"
+
+# --------------------------RUNNER CODE--------------------------
+# Flag variable
+selected_function=""
+fast_scan=true
+full_scan=true
+
+# Flag handling using getopts
+while [[ $# -gt 0 ]]; do
+	case $1 in
+		-h|--help)
+			display_help
+			exit 0
+		;;
+		-u|--url)
+			shift
+			if [[ -n $1 ]]; then
+				url=$1
+			else
+				echo "Error: URL parameter is missing."
+				exit 1
+			fi
+		;;
+		-q|--quiet)
+			show_banner=false
+		;;
+		-v)
+			verbosity=false
+		;;
+		-fa|--fast-scan)
+			fast_scan=true
+			full_scan=false
+			if [[ -n $selected_function ]]; then
+				echo -e "${RED}ERROR: -fa and -fu cannot be provided together${NC}"
+				exit 1
+			fi
+			selected_function="fa"
+		;;
+		-fu|--full-scan)
+			full_scan=true
+			fast_scan=false
+			if [[ -n $selected_function ]]; then
+				echo -e "${RED}ERROR: -fa and -fu cannot be provided together${NC}"
+				exit 1
+			fi
+			selected_function="fu"
+		;;
+		--files)
+			show_files
+			exit 0
+		;;
+		*)
+			echo "Error: Invalid option: $1"
+			exit 1
+		;;
+	esac
+	shift
+done
 
 
-print_banner
+if [[ -z $url ]]; then
+  display_help
+  exit 1
+fi
+
+
+# --------------------------START SCANS--------------------------
+
+if $show_banner; then
+	print_banner
+else
+	echo ""
+fi
+
+
 os_checks
-prerequisites $1
+prerequisites $url
 
-perform_fast_scan
+if $fast_scan;then
+	perform_fast_scan
+fi
+
 provide_suggestions
-perform_full_scan
 
+if $full_scan;then
+	perform_full_scan
+fi
 
 end=$(date +%s.%N)
 
@@ -140,3 +325,14 @@ end=$(date +%s.%N)
 diff=$(awk "BEGIN {printf \"%.2f\", $end - $start}")
 
 echo "Shelloox took: $diff seconds"
+
+
+
+: << TODOs
+[ ] UDP scans *(SUDO)
+[ ] Specific Ports Suggestions
+[ ] Windows compatibility
+[ ] Remove file search for DIR, DNS else make it faster
+[ ] alias_check: check if an alias is set
+[ ] hostname in /etc/hosts *(SUDO)
+TODOs

@@ -36,7 +36,7 @@ source .bashrc
 ```
 
 ## Usage
-Once you have set up Shelloox, you can start utilizing the available tools and scripts. Refer to the individual script's documentation for detailed usage instructions and examples.
+Once you have set up Shelloox, you can start utilizing the available tools and scripts. Refer to the individual script's documentation, or else -h/--help for detailed usage instructions and examples.
 
 ## Contributing
 We welcome contributions from the community to make Shelloox even more robust and feature-rich. If you have any bug fixes, improvements, or new additions to suggest, please follow the guidelines in the CONTRIBUTING.md file.
@@ -45,3 +45,22 @@ We welcome contributions from the community to make Shelloox even more robust an
 If you encounter any issues, have questions, or need assistance with Shelloox, feel free to open an issue on the repository's GitHub page. We appreciate your feedback and will do our best to address any concerns.
 
 Thank you for using Shelloox! We hope these tools and scripts streamline your tasks and enhance your productivity.
+
+## TO DO
+[ ] Windows compatibility
+[ ] Check if an alias is set
+[x] ~~Help flag functionality~~
+
+## TO DO nmap-auto
+
+[ ] UDP scans *(SUDO)
+[ ] Specific Ports Suggestions
+[ ] Remove file search for DIR, DNS else make it faster
+[ ] hostname in /etc/hosts *(SUDO)
+[x] ~~nmap automation script (fast/full scan)~~
+[x] ~~IP validity check~~
+[x] ~~OS discovery~~
+
+## TO DO python-server
+[ ] Upload useful files to ./PythonServer
+[x] ~~Directory printing~~
