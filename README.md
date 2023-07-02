@@ -47,20 +47,20 @@ If you encounter any issues, have questions, or need assistance with Shelloox, f
 Thank you for using Shelloox! We hope these tools and scripts streamline your tasks and enhance your productivity.
 
 ## TO DO
-[ ] Windows compatibility
-[ ] Check if an alias is set
-[x] ~~Help flag functionality~~
+- [ ] Windows compatibility
+- [ ] Check if an alias is set
+- [x] ~~Help flag functionality~~
 
 ## TO DO nmap-auto
 
-[ ] UDP scans *(SUDO)
-[ ] Specific Ports Suggestions
-[ ] Remove file search for DIR, DNS else make it faster
-[ ] hostname in /etc/hosts *(SUDO)
-[x] ~~nmap automation script (fast/full scan)~~
-[x] ~~IP validity check~~
-[x] ~~OS discovery~~
+- [ ] UDP scans *(SUDO)
+- [ ] Specific Ports Suggestions
+- [ ] Remove file search for DIR, DNS else make it faster
+- [ ] hostname in /etc/hosts *(SUDO)
+- [x] ~~nmap automation script (fast/full scan)~~
+- [x] ~~IP validity check~~
+- [x] ~~OS discovery~~
 
 ## TO DO python-server
-[ ] Upload useful files to ./PythonServer
-[x] ~~Directory printing~~
+- [ ] Upload useful files to ./PythonServer
+- [x] ~~Directory printing~~
