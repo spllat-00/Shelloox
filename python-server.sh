@@ -144,7 +144,8 @@ display_help() {
 	echo "Usage: $0 [OPTIONS]"
 	echo "Options:"
 	echo "  -h, --help             Shows this help menu"
-	echo "  -n, --interface        Specify the network interface"
+	echo "  -n, --interface        [OPTIONAL] Will prompt user to select Network Interface"
+	echo "  -n, --interface NAME   [OPTIONAL] Will try to use the give name as Network Interface"
 	echo -e "EXAMPLE:"
 	echo -e "   $0"
 }
