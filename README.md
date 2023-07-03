@@ -16,7 +16,7 @@ To use Shelloox, follow these steps to set up the repository on your local machi
 
 1. Clone the repository to your desired directory using the following command:
 ```bash
-sudo git clone https://github.com/kalePayas/Shelloox.git /opt/Shelloox; cd /opt/Shelloox
+sudo git clone https://github.com/spllat-00/Shelloox.git /opt/Shelloox; cd /opt/Shelloox
 ```
 2. Setup permissions
 ```bash
