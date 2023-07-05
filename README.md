@@ -22,13 +22,16 @@ sudo git clone https://github.com/spllat-00/Shelloox.git /opt/Shelloox; cd /opt/
 ```bash
 sudo chmod -R +x *.sh
 ```
-3. Optional : Setting up alias, in .zshrc orelse .bashrc
+3. Optional : Setting up alias, in .zshrc or .bashrc
 ```bash
 # nmap script
-alias nms="/opt/Shelloox/nmap-auto.sh"
+alias nms="/opt/Shelloox/nmap/nmap-auto.sh"
 
 # python server
-alias pyserver="/opt/Shelloox/python-server.sh"
+alias pyserver="/opt/Shelloox/PyServer/python-server.sh"
+
+# Running as sudo
+alias sudo="sudo "
 
 # Restart/Refresh terminal
 source .zshrc
@@ -50,17 +53,3 @@ Thank you for using Shelloox! We hope these tools and scripts streamline your ta
 - [ ] Windows compatibility
 - [ ] Check if an alias is set
 - [x] ~~Help flag functionality~~
-
-## TO DO nmap-auto
-
-- [ ] UDP scans *(SUDO)
-- [ ] Specific Ports Suggestions
-- [ ] Remove file search for DIR, DNS else make it faster
-- [ ] hostname in /etc/hosts *(SUDO)
-- [x] ~~nmap automation script (fast/full scan)~~
-- [x] ~~IP validity check~~
-- [x] ~~OS discovery~~
-
-## TO DO python-server
-- [ ] Upload useful files to ./PythonServer
-- [x] ~~Directory printing~~

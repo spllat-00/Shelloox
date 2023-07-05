@@ -15,28 +15,66 @@ print_banner(){
 }
 
 perform_fast_scan(){
+	line_spacer
 	echo -e "${YELLOW}[+]    Starting fast scan${NC}"
 	# Fast scan
 	nmap -T4 -F "$IP_ADDRESS" -oN "$FAST_OUTPUT_FILE"
+	
 	echo
 	echo -e "${GREEN}Fast scan completed and results saved in $FAST_OUTPUT_FILE${NC}"
-	echo
-	echo
 }
 
 perform_full_scan(){
+	line_spacer
 	echo -e "${YELLOW}[+]    Starting full scan${NC}"
 	# Full scan
 	nmap --min-rate 5000 -sC -sV -T4 -p- --open "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
 	echo
 	echo -e "${GREEN}Full scan completed and results saved in $FULL_OUTPUT_FILE${NC}"
+}
+
+perform_udp_scan(){
+	line_spacer
+	echo -e "${YELLOW}[+]    UDP SCAN${NC}"
+	
+	if [[ (! (-e "$FAST_OUTPUT_FILE" || -e "$FULL_OUTPUT_FILE")) ]]; then
+		if ! $tcp_ignore; then
+			echo -e "\n---> Residual of TCP scan not found"
+			echo -e "\n\t${RED}SUGGESTION${NC}"
+			echo "Run ${LIGHT_MAGENTA}$0 -u <URL>${NC} first"
+			echo -e "---> To ignore warning run, with \"${LIGHT_MAGENTA}-t${NC}\" flag"
+			exit
+		fi
+	fi
+	
+	nmap -sU --top-ports 100 -Pn --max-rate 500 -T4 "$IP_ADDRESS" -oN "$UDP_OUTPUT_FILE"
+	
 	echo
-	echo
+	echo -e "${GREEN}UDP scan completed and results saved in $UDP_OUTPUT_FILE${NC}"
+}
+
+change_ownership(){
+	line_spacer
+	echo -e "${YELLOW}[+]    Ownership${NC}"
+	current_directory=$(pwd)
+	#echo "current_directory: $current_directory"
+	path="${current_directory#/}"
+	IFS='/' read -r -a parts <<< "$path"
+
+	if [[ "${parts[0]}" == "home" ]]; then
+		owner=$(ls -ld "/home/${parts[1]}" | awk '{print $3}')
+		chown -R $owner:$owner $OUTPUT_DIR
+		echo -e "Ownership changed from \"root\" to $owner"
+	else
+		line_spacer
+		echo -e "New directory not in /home/xxx/\nOwnership will be kept to \"${RED}root${NC}\""
+	fi
 }
 
 provide_suggestions(){
-	echo "==============================="
-	echo -e "${YELLOW}Suggestions for further testing${NC}"
+	line_spacer
+	echo -e "==============================="
+	echo "${YELLOW}Suggestions for further testing${NC}"
 	echo "==============================="
 
 	mediumDirectory=$(locate -r '.*directory-list.*medium.' | grep -m 1 -v 'lowercase')
@@ -65,7 +103,10 @@ provide_suggestions(){
 	echo -e "  Use dnsenum to gather information about ${DULL_YELLOW}DNS${NC}:"
 	echo -e "    ${LIGHT_MAGENTA}dnsenum $IP_ADDRESS${NC}"
 
-	echo "==============================="	
+	echo "==============================="
+}
+
+line_spacer(){
 	echo
 	echo
 }
@@ -98,6 +139,7 @@ prerequisites(){
 	declare -g OUTPUT_DIR=$IP_ADDRESS
 	declare -g FAST_OUTPUT_FILE=$OUTPUT_DIR/fast-scan.txt
 	declare -g FULL_OUTPUT_FILE=$OUTPUT_DIR/full-scan.txt
+	declare -g UDP_OUTPUT_FILE=$OUTPUT_DIR/udp-scan.txt
 
 	ip_validity
 
@@ -115,8 +157,9 @@ ip_validity(){
 
 	ping_output=$(ping -c 1 "$IP_ADDRESS")
 	if [[ $? -eq 0 ]]; then
+		echo -e "${YELLOW}[+]    OS Discovery${NC} (Not accurate)"
 		# ttl=$(echo "$ping_output" | grep -oP "(?<=ttl=)\d+")  # Using pcrepattern
-		ttl=$(echo "$ping_output" | grep ttl | awk -F ' ' '{print $6}' | awk -F '=' '{print $2}')
+		ttl=$(echo "$ping_output" | grep ttl | awk -F 'ttl' '{print $2}' | awk -F ' ' '{print $1}' | sed 's/=//g')
 
 		if [[ $ttl -ge 63 && $ttl -lt 128 ]]; then
 			msg="Operating System: Linux"
@@ -127,9 +170,8 @@ ip_validity(){
 		else
 			msg="TTL: $ttl\n\tOperating System: Unknown"
 		fi
-		
-		echo -e "${YELLOW}[+]    OS Discovery${NC}"
-		echo -e "\t$msg\n\n"
+
+		echo -e "\tTTL: $ttl\n\t$msg"
 	else
 		echo -e "${BOLD_RED}Invalid IP address: $IP_ADDRESS${NC}"
 		exit 1
@@ -144,11 +186,14 @@ display_help(){
 	echo "  -q, --quiet            Do not print the banner on startup"
 	echo "  -fa, --fast-scan       Only fast scan"
 	echo "  -fu, --full-scan       Only full scan"
+	echo "  -U, --udp              Run UDP scan"
+	echo "  -t, --tcp-ignore       Will skip TCP scan"
 	echo -e "MISC:"
 	echo "  --files                Show options for DIR, DNS buster"
 	echo -e "EXAMPLE:"
-	echo -e "   $0 -u 10.0.0.8"
-	echo -e "   $0 -u shelloox.nms.org"
+	echo -e "   $0 -u <hostname>/<IP>"
+	echo -e "   $0 -u shelloox.nms.org -fa"
+	echo -e "   $0 -u shelloox.nms.org --files"
 }
 
 show_files(){
@@ -171,7 +216,7 @@ show_files(){
 		echo -e "No files present with normal name"
 		echo -e "\nSuggestions:\n\t${underline}danielmiessler/SecLists${NC}: ${seclistURL} "
 	else
-		echo -e "${RED}---- Default ----"
+		echo -e "${RED}---- Default ----${NC}"
 		echo -e "\t${GREEN}${mediumDirectory}${NC}"
 		echo -e "${RED}---Other Options Found---${NC}"
 		echo -e "${restDirFile}"
@@ -192,7 +237,7 @@ show_files(){
 		echo -e "No files present with normal name"
 		echo -e "\nSuggestions:\n\t${underline}danielmiessler/SecLists${NC}: ${seclistURL} "
 	else
-		echo -e "${RED}---- Default ----"
+		echo -e "${RED}---- Default ----${NC}"
 		echo -e "\t${GREEN}${firstDnsFile}${NC}"
 		echo -e "${RED}---Other Options Found---${NC}"
 		echo -e "${restDnsFile}"
@@ -233,10 +278,12 @@ BLINK_YELLOW="${C}[5;33m"
 underline="${C}[4m"
 
 # --------------------------RUNNER CODE--------------------------
-# Flag variable
+# Flag initialisation
 selected_function=""
 fast_scan=true
 full_scan=true
+udp_scan=false
+tcp_ignore=false
 
 # Flag handling using getopts
 while [[ $# -gt 0 ]]; do
@@ -278,6 +325,16 @@ while [[ $# -gt 0 ]]; do
 			fi
 			selected_function="fu"
 		;;
+		-U|--udp)
+			if [[ "$EUID" -ne 0 ]]; then
+				echo -e "${RED}ERROR: UDP scans need 'sudo' privilege${NC}"
+				exit
+			fi
+			udp_scan=true
+		;;
+		-t|--tcp-ignore)
+			tcp_ignore=true
+		;;
 		--files)
 			show_files
 			exit 0
@@ -299,37 +356,50 @@ fi
 
 # --------------------------START SCANS--------------------------
 
+# Banner
 if $show_banner; then
 	print_banner
 else
 	echo ""
 fi
 
-
+# Required checks
 os_checks
 prerequisites $url
 
-if $fast_scan;then
+# Fast Scan
+if ! $tcp_ignore && $fast_scan; then
+	#echo "fast_scan"
 	perform_fast_scan
 fi
 
+# Suggestions
 provide_suggestions
 
-if $full_scan;then
+# Full Scan
+if ! $tcp_ignore && $full_scan; then
+	#echo "full_scan"
 	perform_full_scan
 fi
 
-end=$(date +%s.%N)
+# UDP Scan
+if $udp_scan; then
+	#echo "udp_scan" 
+	perform_udp_scan
+	change_ownership
+fi
+
 
 # Calculate time difference using awk
+end=$(date +%s.%N)
 diff=$(awk "BEGIN {printf \"%.2f\", $end - $start}")
 
-echo "Shelloox took: $diff seconds"
+line_spacer
+echo -e "Shelloox took: $diff seconds"
 
 
 
 : << TODOs
-[ ] UDP scans *(SUDO)
 [ ] Specific Ports Suggestions
 [ ] Windows compatibility
 [ ] Remove file search for DIR, DNS else make it faster
