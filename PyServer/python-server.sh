@@ -198,7 +198,7 @@ trap ctrl_c SIGINT
 
 port=9092
 scriptFilePath=$(realpath "$0")
-folderName="PyServer/files"
+folderName="files"
 directory="${scriptFilePath%/*}/$folderName" # Change for custom directory
 
 ip_fetcher
