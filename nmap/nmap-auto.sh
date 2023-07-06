@@ -18,7 +18,7 @@ perform_fast_scan(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Starting fast scan${NC}"
 	# Fast scan
-	nmap -T4 -F "$IP_ADDRESS" -oN "$FAST_OUTPUT_FILE"
+	nmap -T4 -F -Pn "$IP_ADDRESS" -oN "$FAST_OUTPUT_FILE"
 	
 	echo
 	echo -e "${GREEN}Fast scan completed and results saved in $FAST_OUTPUT_FILE${NC}"
@@ -28,7 +28,21 @@ perform_full_scan(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Starting full scan${NC}"
 	# Full scan
-	nmap --min-rate 5000 -sC -sV -T4 -p- --open "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
+	
+	# Fix this, does catch few ports
+	# Test sunday and refer to solved solution report for number of ports
+	if ($split_scan && false ); then
+		echo -e "\t${YELLOW}[-]    Searching open ports${NC}"
+		ports=$(nmap --min-rate 5000 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE" | grep -E "[0-9]+/tcp" )
+		n_ports=$(echo "$ports" | sed ':a;N;$!ba;s/\n/\n\t\t/g')
+		ports=$(echo "$ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
+		echo -e "\tOpen Ports: \n\t\t$n_ports\n"
+		echo -e "\t${YELLOW}[-]    Service Enumeration${NC}"
+		nmap -sC -sV -Pn -p "$ports" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
+	else
+		nmap --min-rate 5000 -sC -sV -T4 -Pn -p- --open "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
+	fi
+	
 	echo
 	echo -e "${GREEN}Full scan completed and results saved in $FULL_OUTPUT_FILE${NC}"
 }
@@ -138,6 +152,7 @@ prerequisites(){
 	declare -g IP_ADDRESS=$1
 	declare -g OUTPUT_DIR=$IP_ADDRESS
 	declare -g FAST_OUTPUT_FILE=$OUTPUT_DIR/fast-scan.txt
+	declare -g FULL_PORTS_FILE=$OUTPUT_DIR/full-ports.txt
 	declare -g FULL_OUTPUT_FILE=$OUTPUT_DIR/full-scan.txt
 	declare -g UDP_OUTPUT_FILE=$OUTPUT_DIR/udp-scan.txt
 
@@ -188,6 +203,7 @@ display_help(){
 	echo "  -fu, --full-scan       Only full scan"
 	echo "  -U, --udp              Run UDP scan"
 	echo "  -t, --tcp-ignore       Will skip TCP scan"
+	echo "  -s, --split-scan       Split full scan, in 2: ports + full"
 	echo -e "MISC:"
 	echo "  --files                Show options for DIR, DNS buster"
 	echo -e "EXAMPLE:"
@@ -284,6 +300,7 @@ fast_scan=true
 full_scan=true
 udp_scan=false
 tcp_ignore=false
+split_scan=false
 
 # Flag handling using getopts
 while [[ $# -gt 0 ]]; do
@@ -331,6 +348,9 @@ while [[ $# -gt 0 ]]; do
 				exit
 			fi
 			udp_scan=true
+		;;
+		-s|--split-scan)
+			split_scan=true
 		;;
 		-t|--tcp-ignore)
 			tcp_ignore=true
