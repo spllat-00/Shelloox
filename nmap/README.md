@@ -53,3 +53,15 @@ alias nms="/opt/Shelloox/nmap/nmap-auto.sh"
 - [x] ~~IP validity check~~
 - [x] ~~OS discovery~~
 - [x] ~~UDP scans *(SUDO)~~
+
+## Screenshots
+- Complete Scan with UDP
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/4229d740-e8f4-4aee-bced-8580a14fd98a)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/b9d97deb-232d-4228-993a-36b389c508cc)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/b58cbc45-307a-420e-b5cc-2945a58f1e3c)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/0218a13f-37b3-47b9-8f32-d4b1777540ee)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/5f2d0c57-f050-4cf3-8406-41a89b25602d)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/167a4970-9242-4f48-8809-b60f20c3b3cf)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/2d5329ed-e796-4947-b6ca-14f4c59c326c)
+
+---
