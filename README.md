@@ -41,6 +41,15 @@ source .bashrc
 ## Usage
 Once you have set up Shelloox, you can start utilizing the available tools and scripts. Refer to the individual script's documentation, or else -h/--help for detailed usage instructions and examples.
 
+## Screenshots
+- Install Repo
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/437d290b-0934-40ce-aecc-78f803aac6d0)
+- Give executable permissions
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/21e25e9d-0918-4867-afb8-76a56dff1d40)
+- Confirm after setting up alias
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/0bd72db0-27c4-4f57-abe7-83286e3cf0c3)
+
+
 ## Contributing
 We welcome contributions from the community to make Shelloox even more robust and feature-rich. If you have any bug fixes, improvements, or new additions to suggest, please follow the guidelines in the CONTRIBUTING.md file.
 
