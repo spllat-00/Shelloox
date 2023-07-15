@@ -62,13 +62,13 @@ directory_printing(){
 }
 
 common_links(){
-	if [ -z "$ip_address" ]; then
-		backup_link=$(ip -o -4 addr show eth0 | awk '{print $4}' | cut -d '/' -f 1)
-		ip_address=$backup_link
-		echo -e "${RED}tun0 doesn't exists, using eth0${NC}"
-	fi
 	echo -e "${ORANGE}[+]    Common Links${NC}\n"
-	echo -e "http://${ip_address}:${port}/privEsc/linpeas.sh"
+	if [[ $script_path != $directory ]]; then
+		echo "${DULL_RED}Default path${NC} may contain useful files: "
+	else
+		script_path="http://$ip_address:${port}"
+	fi
+	echo -e "${script_path}/privEsc/linpeas.sh"
 	echo ""
 }
 
@@ -129,31 +129,121 @@ ip_fetcher(){
 	echo -e "Selected: $interface\t$ip_address\n"
 }
 
+check_port_status(){
+	# Check if given port is open
+	# nc -z -v -w 5 "$1" "$2" 2>/dev/null
+	
+	pid=$(lsof -i :"$port" -t)
+	
+	if [[ -n "$pid" ]]; then
+		command=$(ps -p $pid -o args --no-headers)
+		echo "$command" # Port is closed
+		echo "$pid"
+	else
+		echo "OPEN" # Port is open
+	fi
+
+}
+
 start_server(){
 	# Change to the specified directory
 	# cd "$directory" || exit
 	echo -e "${ORANGE}[+]    Starting server${NC}"
-	echo -e "Link: ${BLUE}http://$ip_address:$port${NC}"
-	echo "Serving files from directory: $directory"
-	printf "\n"
-	# Start the server
-	python3 -m http.server "$port" --directory "$directory" --bind "$ip_address"
+	
+	start_server=false
+	
+	while [[ "$start_server" != true ]]; do
+		result=$(check_port_status "$ip_address" "$port")
+		#echo "RESULT: {$result}"
+		command=${result%$'\n'*} # Restore Command
+		pid=${result#*$'\n'} # Restore PID
+		
+		if [[ $result == "OPEN" ]]; then
+			start_server=true # Port is available to use
+		else
+			#echo "Something is using the port: ${RED}$res${NC}" # Port is unavailable to use
+			start_server=false
+		fi
+		
+		# Asking user if they want to kill the existing port usage
+		if ! $start_server; then
+			echo -e "The port $port, is already being used by:\n\t${RED}$command${NC}"
+			echo "Select user's choice:"
+			echo -e "\t1. Kill PID"
+			echo -e "\t2. Use another PORT"
+			echo -e "\t3. Exit"
+			read -p "Enter your choice (1-3): " choice
+
+			case $choice in
+				1)
+					kill "$pid"
+					if [[ $? -eq 0 ]]; then
+						echo "${DULL_YELLOW}Successfully killed process with PID $pid${NC}"
+						start_server=true
+					else
+						echo "${RED}Something went wrong while killing PID $pid${NC}"
+					fi
+				;;
+				2)
+					read -p "    Which port should be used: " port
+					echo
+					#start_server=true
+				;;
+				*)
+					echo "Exiting..."
+					exit 0
+				;;
+			esac
+		fi
+	done
+	
+	if $start_server; then
+		# Pre start server prints
+		echo -e "Link: ${BLUE}http://$ip_address:$port${NC}"
+		echo "Serving files from directory: $directory" # [TODO] Print out the absolute path of the provided path
+		printf "\n"
+		
+		# Start the server
+		python3 -m http.server "$port" --directory "$directory" --bind "$ip_address" 2>/dev/null
+		
+		# [TODO] Implement a fail check
+		# CONDITION:
+		# 	If the PORT is running by root or different user
+	fi
+
+}
+
+get_path(){
+	echo "Path of directory where the python server be hosted?"
+	read -p "Path: " directory
+	echo "Path set for: $directory"
 }
 
 display_help() {
-	echo "Usage: $0 [OPTIONS]"
-	echo "Options:"
-	echo "  -h, --help             Shows this help menu"
-	echo "  -n, --interface NAME   [OPTIONAL] Will prompt user to select Network Interface"
-	echo -e "EXAMPLE:"
-	echo -e "   $0"
-	echo -e "   $0 -n"
-	echo -e "   $0 -n eth0"
+	echo "Usage:"
+	echo "  $0"
+	echo
+	echo "Optional Options:"
+	echo "  -h, --help                     Shows this help menu"
+	echo "  -n, --interface NAME[optional] Will prompt user to select Network Interface"
+	echo "  -p, --port                     Port to run on"
+	echo "  -d, --directory                Directory path for the file server"
+	echo
+	echo "EXAMPLE:"
+	echo "   $0"
+	echo "   $0 -n"
+	echo "   $0 -n eth0"
 }
 
 #--------------------------RUNNER CODE--------------------------
 
 interface=""
+port=9092
+
+scriptFilePath=$(realpath "$0")
+folderName="files"
+directory="${scriptFilePath%/*}/$folderName" # Change for custom directory
+script_path=$directory
 
 # Flag handling using getopts
 while [[ $# -gt 0 ]]; do
@@ -167,6 +257,24 @@ while [[ $# -gt 0 ]]; do
 			if ! [ -z "$2" ]; then
 				interface=$2
 				shift
+			fi
+		;;
+		-p|--port)
+			if ! [ -z "$2" ]; then
+				port=$2
+				shift
+			else
+				echo -e "Port number not specified\t$0 -p 9092\n"
+				display_help
+				exit 1
+			fi
+		;;
+		-d|--directory)
+			if ! [ -z "$2" ]; then
+				directory=$2
+				shift
+			else
+				get_path
 			fi
 		;;
 		*)
@@ -195,11 +303,6 @@ NC="${C}[0m"
 
 # Trap the SIGINT signal (Ctrl+C)
 trap ctrl_c SIGINT
-
-port=9092
-scriptFilePath=$(realpath "$0")
-folderName="files"
-directory="${scriptFilePath%/*}/$folderName" # Change for custom directory
 
 ip_fetcher
 
