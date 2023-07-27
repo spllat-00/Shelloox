@@ -29,20 +29,25 @@ print_files(){
 		local extension="${name##*.}"
 		
 		if [ -f "$item" ]; then
-			case "$extension" in
-				sh)
-					# Shell script - print in green color
-					echo -e "${indent}└── ${CYAN}$name${NC}"
-					;;
-				py | c | php)
-					# Files with extensions py, c, php - print in purple color
-					echo -e "${indent}└── ${PURPLE}$name${NC}"
-					;;
-				*)
-					# Regular file - print in default color
-					echo -e "${indent}└── $name"
-					;;
-			esac
+			if file -b "$item" | grep -q "ELF .* executable"; then
+				# Binary Executable - print in red color
+				echo -e "${indent}└── ${DULL_RED}$name${NC}"
+			else
+				case "$extension" in
+					sh)
+						# Shell script - print in green color
+						echo -e "${indent}└── ${GREEN}$name${NC}"
+						;;
+					py | c | php)
+						# Files with extensions py, c, php - print in purple color
+						echo -e "${indent}└── ${PURPLE}$name${NC}"
+						;;
+					*)
+						# Regular file - print in default color
+						echo -e "${indent}└── $name"
+						;;
+				esac
+			fi
 
 			
 		elif [ -d "$item" ]; then
@@ -55,7 +60,7 @@ print_files(){
 
 directory_printing(){
 	echo -e "${ORANGE}[+]    Directory Tree${NC}\n"
-	echo -e "$folderName"
+	echo -e "${BACK_CYAN}$folderName${NC}"
 	print_files "$directory" ""
 	echo
 	# printf "\n=========================\n\n"
@@ -290,15 +295,20 @@ done
 #--------------------------MAIN CODE--------------------------
 
 # Define ANSI color variables
-
 C=$(printf '\E')
+# Dull Colors
 DULL_RED="${C}[0;31m"
+DULL_YELLOW="${C}[0;33m"
+# Bold Colors
 RED="${C}[1;31m"
 PURPLE="${C}[1;35m"
-DULL_YELLOW="${C}[0;33m"
 ORANGE="${C}[1;33m"
-CYAN="${C}[1;32m"
+GREEN="${C}[1;32m"
+CYAN="${C}[1;36m"
 BLUE="${C}[1;34m"
+# Background Colors
+BACK_CYAN="${C}[1;100m"
+# No Color
 NC="${C}[0m"
 
 # Trap the SIGINT signal (Ctrl+C)
