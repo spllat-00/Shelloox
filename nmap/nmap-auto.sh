@@ -31,7 +31,8 @@ perform_full_scan(){
 	
 	# Fix this, does catch few ports
 	# Test sunday and refer to solved solution report for number of ports
-	if ($split_scan && false ); then
+
+	if ($split_scan && false); then
 		echo -e "\t${YELLOW}[-]    Searching open ports${NC}"
 		ports=$(nmap --min-rate 5000 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE" | grep -E "[0-9]+/tcp" )
 		n_ports=$(echo "$ports" | sed ':a;N;$!ba;s/\n/\n\t\t/g')
@@ -125,7 +126,7 @@ line_spacer(){
 	echo
 }
 
-os_checks(){
+user_os_checks(){
 	# Get the name of the operating system
 	OS=$(uname -s)
 	# Check if the OS is Windows
@@ -170,23 +171,29 @@ ip_validity(){
 	#	exit 1
 	#fi
 
-	ping_output=$(ping -c 1 "$IP_ADDRESS")
+	ping_output=$(ping -c 1 "$IP_ADDRESS" 2>/dev/null)
 	if [[ $? -eq 0 ]]; then
 		echo -e "${YELLOW}[+]    OS Discovery${NC} (Not accurate)"
 		# ttl=$(echo "$ping_output" | grep -oP "(?<=ttl=)\d+")  # Using pcrepattern
 		ttl=$(echo "$ping_output" | grep ttl | awk -F 'ttl' '{print $2}' | awk -F ' ' '{print $1}' | sed 's/=//g')
 
-		if [[ $ttl -ge 63 && $ttl -lt 128 ]]; then
+		if [[ $ttl -le 64 ]]; then
 			msg="Operating System: Linux"
-		elif [[ $ttl -ge 128 && $ttl -lt 255 ]]; then
+			expected_ttl=64
+		elif [[ $ttl -gt 64 && $ttl -le 128 ]]; then
 			msg="Operating System: Windows"
-		elif [[ $ttl -eq 255 ]]; then
-			msg="Operating System: MacOS"
+			expected_ttl=128
+		elif [[ $ttl -gt 128 && $ttl -le 255 ]]; then
+			msg="Operating System: cannot be determined just by TTY"
+			expected_ttl=$ttl
 		else
 			msg="TTL: $ttl\n\tOperating System: Unknown"
+			expected_ttl=$ttl
 		fi
 
-		echo -e "\tTTL: $ttl\n\t$msg"
+		echo -e "\tTTL: $ttl"
+		routers=$((expected_ttl - ttl)); [ $routers -ne 0 ] && echo -e "\tNumber of routers between user and $IP_ADDRESS: $routers"
+		echo -e "\t$msg"
 	else
 		echo -e "${BOLD_RED}Invalid IP address: $IP_ADDRESS${NC}"
 		exit 1
@@ -384,7 +391,7 @@ else
 fi
 
 # Required checks
-os_checks
+user_os_checks
 prerequisites $url
 
 # Fast Scan
