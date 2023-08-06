@@ -125,8 +125,8 @@ if __name__ == "__main__":
     # Variable init
     parser = argparse.ArgumentParser(description='Add a file to a GitHub repository.')
     parser.add_argument('--f-name', '-f', dest='file_name',      help='Name of the file to be added', required=True)
+    parser.add_argument('--f-path',        dest='folder_path',      help='Name of the folder from which file has to be uploaded')
     parser.add_argument('--folder', '-fo', dest='git_folder',      help='Name of the folder in which to be added', default='')
-    parser.add_argument('--f-path',        dest='folder_path',      help='Name of the file to be added')
     parser.add_argument('--r-name', '-r',  dest='repo_name',      help='Name of the GitHub repository', required=True)
     parser.add_argument('--r-user', '-u',  dest='repo_owner',          help='Username of the GitHub repository', default=os.getenv('REPO_OWNER'))
     parser.add_argument('--token',  '-t',  dest='access_token',        help='Token of GitHub', default=os.getenv('ACCESS_TOKEN'))
