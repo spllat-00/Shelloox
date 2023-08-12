@@ -14,44 +14,57 @@ print_banner(){
 	echo
 }
 
+# Fast Scan
 perform_fast_scan(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Starting fast scan${NC}"
-	# Fast scan
 	nmap -T4 -F -Pn "$IP_ADDRESS" -oN "$FAST_OUTPUT_FILE"
-	
+
+	#fast_ports=$(less $FAST_OUTPUT_FILE | grep -E "[0-9]+/tcp")
+	#fast_ports=$(echo "$fast_ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
+	#OPEN_PORTS="$fast_ports"
+
+	open_ports_grep $FAST_OUTPUT_FILE "tcp"
+
 	echo
 	echo -e "${GREEN}Fast scan completed and results saved in $FAST_OUTPUT_FILE${NC}"
 }
 
+# Full Scan
 perform_full_scan(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Starting full scan${NC}"
-	# Full scan
-	
-	# Fix this, does catch few ports
-	# Test sunday and refer to solved solution report for number of ports
 
-	if ($split_scan && false); then
-		echo -e "\t${YELLOW}[-]    Searching open ports${NC}"
-		ports=$(nmap --min-rate 5000 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE" | grep -E "[0-9]+/tcp" )
-		n_ports=$(echo "$ports" | sed ':a;N;$!ba;s/\n/\n\t\t/g')
-		ports=$(echo "$ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
-		echo -e "\tOpen Ports: \n\t\t$n_ports\n"
-		echo -e "\t${YELLOW}[-]    Service Enumeration${NC}"
-		nmap -sC -sV -Pn -p "$ports" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
-	else
-		nmap --min-rate 5000 -sC -sV -T4 -Pn -p- --open "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
-	fi
-	
+	all_ports_finder
+	full_ports_scan
+
 	echo
-	echo -e "${GREEN}Full scan completed and results saved in $FULL_OUTPUT_FILE${NC}"
+	echo -e "${GREEN}Ports scan: $FULL_PORTS_FILE${NC}"
+	echo -e "${GREEN}Full scan: $FULL_OUTPUT_FILE${NC}"
 }
 
+# Quick Scan
+all_ports_finder(){
+	echo -e "\t${YELLOW}[-]    Searching open ports${NC}"
+	nmap --min-rate 5000 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE"
+
+	open_ports_grep $FULL_PORTS_FILE "tcp"
+
+	echo -e "\t${GREEN}Ports scan completed and results saved in $FULL_PORTS_FILE${NC}\n"
+}
+
+# Full Scan from Quick Scan
+full_ports_scan(){
+	echo -e "\t${YELLOW}[-]    Service Enumeration${NC}" >&2
+	nmap -sC -sV -Pn -p "$OPEN_PORTS" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
+	echo -e "\t${GREEN}Full scan completed and results saved in $FULL_OUTPUT_FILE${NC}"
+}
+
+# UDP Scan
 perform_udp_scan(){
 	line_spacer
 	echo -e "${YELLOW}[+]    UDP SCAN${NC}"
-	
+
 	if [[ (! (-e "$FAST_OUTPUT_FILE" || -e "$FULL_OUTPUT_FILE")) ]]; then
 		if ! $tcp_ignore; then
 			echo -e "\n---> Residual of TCP scan not found"
@@ -61,13 +74,27 @@ perform_udp_scan(){
 			exit
 		fi
 	fi
-	
+
 	nmap -sU --top-ports 100 -Pn --max-rate 500 -T4 "$IP_ADDRESS" -oN "$UDP_OUTPUT_FILE"
-	
+
+	open_ports_grep $UDP_OUTPUT_FILE "udp"
+
 	echo
 	echo -e "${GREEN}UDP scan completed and results saved in $UDP_OUTPUT_FILE${NC}"
 }
 
+# open_ports_grepper
+open_ports_grep(){
+	if [[ -z "$1" || -z "$2" ]]; then
+		echo "Empty Argument, need file"
+	else
+		open_ports=$(less $1 | grep -E "[0-9]+/$2")
+		open_ports=$(echo "$open_ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
+		OPEN_PORTS="$open_ports"
+	fi
+}
+
+# Folder Ownership
 change_ownership(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Ownership${NC}"
@@ -86,48 +113,68 @@ change_ownership(){
 	fi
 }
 
-provide_suggestions(){
+# Suggestions
+suggester(){
 	line_spacer
-	echo -e "==============================="
-	echo "${YELLOW}Suggestions for further testing${NC}"
-	echo "==============================="
 
-	mediumDirectory=$(locate -r '.*directory-list.*medium.' | grep -m 1 -v 'lowercase')
-	subdomain5000=$(locate -r .*DNS.*subdomains-top1million-5000.txt | head -n 1)
-	
-	if [[ -n "$subdomain5000" || -n "$mediumDirectory" ]]; then
-		echo -e "To know other files for \"$LIGHT_MAGENTA-w$NC\", try running: ${RED}$0 --files${NC}\n"
+
+	source "${suggester_action_script}/suggester-actions.sh"
+
+	echo -e "${YELLOW}[+]    Suggester${NC}"
+	suggested=0
+
+	if [[ -z "$OPEN_PORTS" ]]; then
+		if $tcp_ignore && ! $udp_scan; then
+			echo -e "\t${RED}Atleast do any one of the following:${NC}
+		${RED}1. Fast Scan ( -fa )${NC}
+		${RED}2. Full Scan ( -fu )${NC}
+		${RED}3. UDP scan  ( -U  )${NC}"
+		else
+			echo -e "\t${RED}Sorry! Quick Ports scan Failed.\n\tCreate an issue on GitHub: ( ${GITHUB}/issues ) preferred with screenshot of output${NC}"
+		fi
+		echo -e "\tSuggestion not provided"
+	else
+		IFS=', ' read -ra num_array  <<< "$OPEN_PORTS"
+
+		declare -A exclusion_ports
+
+		exclusion_ports[80]=false
+		exclusion_ports[139]=false
+
+		for num in "${num_array[@]}"; do
+			#echo "$num"
+			if [[ -v PORT_MESSAGES[$num] ]]; then
+				(( suggested++ ))
+				echo -e "${PORT_MESSAGES[$num]}"
+				if [[ ($num == 80 || $num == 443 || $num == 8080) && ${exclusion_ports[80]} == "false" ]]; then
+					if [[ $num == 8080 ]]; then
+						port_80_443 "8080"
+					else
+						port_80_443
+					fi 
+					exclusion_ports[80]=true
+					echo -e "\t----------------------------------------------------------"
+				elif [[ ($num == 139 || $num == 445) && ${exclusion_ports[139]} == "false" ]]; then
+					exclusion_ports[139]=true
+				fi
+			fi
+		done
+		if [[ $suggested == 0 ]]; then
+			echo -e "\tOpen Ports: $OPEN_PORTS"
+			echo -e "\tSorry! The above ports are not yet added in our database."
+			echo -e "\tCreate an issue with tag:\"${DULL_YELLOW}requried port${NC}\" on ${DULL_YELLOW}${GITHUB}/issues${NC}"
+		fi
 	fi
-	
-	# ------ DIR Busting ------
-	if ! [[ -n "$mediumDirectory" ]]; then
-		mediumDirectory="<PATH_TO_DIR/subdomains-top1million-5000.txt>"
-	fi
-	echo -e "  Use gobuster to search for ${DULL_YELLOW}hidden directories${NC}:"
-	echo -e "    ${LIGHT_MAGENTA}gobuster dir -u http://$IP_ADDRESS -w $mediumDirectory -t 20${NC}"
-
-
-	# ------ VHOST ------
-	if ! [[ -n "$subdomain5000" ]]; then
-		subdomain5000="<PATH_TO_DNS/subdomains-top1million-5000.txt>"
-	fi
-	echo -e "  Use gobuster to search for ${DULL_YELLOW}virtual hosts${NC}:"
-	echo -e "    ${LIGHT_MAGENTA}gobuster vhost -u http://$IP_ADDRESS -w $subdomain5000 -t 20${NC}"
-
-	# ------ DNS ------
-	echo -e "  Use dnsenum to gather information about ${DULL_YELLOW}DNS${NC}:"
-	echo -e "    ${LIGHT_MAGENTA}dnsenum $IP_ADDRESS${NC}"
-
-	echo "==============================="
 }
 
+# Spacer
 line_spacer(){
 	echo
 	echo
 }
 
+# OS Compatibility
 user_os_checks(){
-	# Get the name of the operating system
 	OS=$(uname -s)
 	# Check if the OS is Windows
 	if [[ "$OS" == "CYGWIN"* || "$OS" == "MINGW"* ]]; then
@@ -142,6 +189,7 @@ user_os_checks(){
 	# echo "==============================="
 }
 
+# Startup Sequences
 prerequisites(){
 	if [ $# -eq 0 ]
 	then
@@ -150,12 +198,18 @@ prerequisites(){
 		exit 1
 	fi
 
+	# Global Variable Declarations
 	declare -g IP_ADDRESS=$1
 	declare -g OUTPUT_DIR=$IP_ADDRESS
+	declare -g IS_DOMAIN
 	declare -g FAST_OUTPUT_FILE=$OUTPUT_DIR/fast-scan.txt
 	declare -g FULL_PORTS_FILE=$OUTPUT_DIR/full-ports.txt
 	declare -g FULL_OUTPUT_FILE=$OUTPUT_DIR/full-scan.txt
 	declare -g UDP_OUTPUT_FILE=$OUTPUT_DIR/udp-scan.txt
+	declare -g OPEN_PORTS=""
+
+	suggester_action_script="$(dirname "$(readlink -f "$0")")"
+	declare -g -A SUGGEST_ACTION_SCRIPT=$suggester_action_script
 
 	ip_validity
 
@@ -164,14 +218,9 @@ prerequisites(){
 	fi
 }
 
+# Check Availability IP/Domain
 ip_validity(){
-	# Check if IP address is valid
-	#if [[ ! $IP_ADDRESS =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-	#	echo -e "${BOLD_RED}Invalid IP address: $IP_ADDRESS${NC}"
-	#	exit 1
-	#fi
-
-	ping_output=$(ping -c 1 "$IP_ADDRESS" 2>/dev/null)
+	ping_output=$(timeout 5s ping -c 1 "$IP_ADDRESS" 2>/dev/null)
 	if [[ $? -eq 0 ]]; then
 		echo -e "${YELLOW}[+]    OS Discovery${NC} (Not accurate)"
 		# ttl=$(echo "$ping_output" | grep -oP "(?<=ttl=)\d+")  # Using pcrepattern
@@ -194,12 +243,20 @@ ip_validity(){
 		echo -e "\tTTL: $ttl"
 		routers=$((expected_ttl - ttl)); [ $routers -ne 0 ] && echo -e "\tNumber of routers between user and $IP_ADDRESS: $routers"
 		echo -e "\t$msg"
+
+		# Check if IP address or Domain
+		if [[ $IP_ADDRESS =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+			IS_DOMAIN=false
+		else
+			IS_DOMAIN=true
+		fi
 	else
 		echo -e "${BOLD_RED}Invalid IP address: $IP_ADDRESS${NC}"
 		exit 1
 	fi
 }
 
+# Help
 display_help(){
 	echo "Usage: $0 [OPTIONS]"
 	echo "Options:"
@@ -209,7 +266,7 @@ display_help(){
 	echo "  -fa, --fast-scan       Only fast scan"
 	echo "  -fu, --full-scan       Only full scan"
 	echo "  -U, --udp              Run UDP scan"
-	echo "  -t, --tcp-ignore       Will skip TCP scan"
+	echo "  -ti, --tcp-ignore       Will skip TCP scan"
 	echo "  -s, --split-scan       Split full scan, in 2: ports + full"
 	echo -e "MISC:"
 	echo "  --files                Show options for DIR, DNS buster"
@@ -219,14 +276,15 @@ display_help(){
 	echo -e "   $0 -u shelloox.nms.org --files"
 }
 
+# Print Files
 show_files(){
 	echo ""
 
 	# DIR
 	strDIR='.*directory-list.*medium.'
-	
+
 	mediumDirectory=$(locate -r $strDIR | grep -m 1 -v 'lowercase')
-	
+
 	restDirFile=$(locate -r $strDIR | tail -n +2 )
 	restDirFile="$(echo -e "$restDirFile" | sed 's/^/\t/')"
 
@@ -248,12 +306,12 @@ show_files(){
 
 	# DNS
 	strDNS='.*DNS.*subdomains-top1million-5000.txt'
-	
+
 	firstDnsFile=$(locate -r $strDNS | head -n 1)
-	
+
 	restDnsFile=$(locate -r $strDNS | tail -n +2)
 	restDnsFile="$(echo -e "$restDnsFile" | sed 's/^/\t/')"
-	
+
 	echo -e "\n${YELLOW}[+]    DNS Busting${NC}"
 	echo -e "--------------------------------"
 	if ! [[ -n "$firstDnsFile" ]]; then
@@ -267,6 +325,7 @@ show_files(){
 	fi
 }
 
+# Alias set for easy of use
 : << COMMENT_TO_DO
 alias_check(){
 	# Function should check if a alias has been set
@@ -296,7 +355,7 @@ LIGHT_CYAN="${C}[0;36m"
 NC="${C}[0m"
 ITALIC="${C}[3m"
 BACKGROUND_YELLOW="${C}[43m"
-BLINK_YELLOW="${C}[5;33m"
+BLINK_RED="${C}[5;31m"
 
 underline="${C}[4m"
 
@@ -308,6 +367,9 @@ full_scan=true
 udp_scan=false
 tcp_ignore=false
 split_scan=false
+
+# Variables
+GITHUB="https://github.com/spllat-00/Shelloox"
 
 # Flag handling using getopts
 while [[ $# -gt 0 ]]; do
@@ -359,7 +421,7 @@ while [[ $# -gt 0 ]]; do
 		-s|--split-scan)
 			split_scan=true
 		;;
-		-t|--tcp-ignore)
+		-ti|--tcp-ignore)
 			tcp_ignore=true
 		;;
 		--files)
@@ -374,12 +436,11 @@ while [[ $# -gt 0 ]]; do
 	shift
 done
 
-
+# URL Required
 if [[ -z $url ]]; then
   display_help
   exit 1
 fi
-
 
 # --------------------------START SCANS--------------------------
 
@@ -394,28 +455,27 @@ fi
 user_os_checks
 prerequisites $url
 
-# Fast Scan
+# Call Fast Scan
 if ! $tcp_ignore && $fast_scan; then
 	#echo "fast_scan"
 	perform_fast_scan
 fi
 
-# Suggestions
-provide_suggestions
-
-# Full Scan
+# Call Full Scan
 if ! $tcp_ignore && $full_scan; then
 	#echo "full_scan"
 	perform_full_scan
 fi
 
-# UDP Scan
+# Call UDP Scan
 if $udp_scan; then
 	#echo "udp_scan" 
 	perform_udp_scan
 	change_ownership
 fi
 
+# Call Suggester
+suggester
 
 # Calculate time difference using awk
 end=$(date +%s.%N)
