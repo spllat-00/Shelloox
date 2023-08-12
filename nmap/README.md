@@ -56,12 +56,9 @@ alias nms="/opt/Shelloox/nmap/nmap-auto.sh"
 
 ## Screenshots
 - Complete Scan with UDP
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/4229d740-e8f4-4aee-bced-8580a14fd98a)
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/b9d97deb-232d-4228-993a-36b389c508cc)
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/b58cbc45-307a-420e-b5cc-2945a58f1e3c)
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/0218a13f-37b3-47b9-8f32-d4b1777540ee)
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/5f2d0c57-f050-4cf3-8406-41a89b25602d)
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/167a4970-9242-4f48-8809-b60f20c3b3cf)
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/2d5329ed-e796-4947-b6ca-14f4c59c326c)
 
----
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/395b933a-5aa6-4132-99b0-ae603062d5cd)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/7e18522b-3330-4719-8f82-eda92d987908)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/a3a50510-f956-4862-bf28-f449ad44e173)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/4d046f39-ef2d-41a1-b249-4c6d2530c5d2)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/46de12ce-4cdd-484b-992a-c2d05ca615ec)
