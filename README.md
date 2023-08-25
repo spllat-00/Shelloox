@@ -20,15 +20,15 @@ sudo git clone https://github.com/spllat-00/Shelloox.git /opt/Shelloox; cd /opt/
 ```
 2. Setup permissions
 ```bash
-find . -type f -name '*.sh' | grep -v "files" | xargs sudo chmod +x
+sudo find . -type f -name 'script-*.sh' -exec chmod +x {} \;
 ```
 3. Optional : Setting up alias, in .zshrc or .bashrc
 ```bash
 # nmap script
-alias nms="/opt/Shelloox/nmap/nmap-auto.sh"
+alias nms="/opt/Shelloox/nmap/script-nmap-auto.sh"
 
 # python server
-alias pyserver="/opt/Shelloox/PyServer/python-server.sh"
+alias pyserver="/opt/Shelloox/PyServer/script-python-server.sh"
 
 # Running as sudo
 alias sudo="sudo "

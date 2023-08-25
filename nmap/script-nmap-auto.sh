@@ -48,7 +48,7 @@ all_ports_finder(){
 	echo -e "\t${YELLOW}[-]    Searching open ports${NC}"
 	nmap --min-rate 5000 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE"
 
-	open_ports_grep $FULL_PORTS_FILE "tcp"
+	open_ports_grep $FULL_PORTS_FILE "tcp" "full"
 
 	echo -e "\t${GREEN}Ports scan completed and results saved in $FULL_PORTS_FILE${NC}\n"
 }
@@ -56,7 +56,8 @@ all_ports_finder(){
 # Full Scan from Quick Scan
 full_ports_scan(){
 	echo -e "\t${YELLOW}[-]    Service Enumeration${NC}" >&2
-	nmap -sC -sV -Pn -p "$OPEN_PORTS" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
+
+	nmap -sC -sV -Pn -p "$OPEN_PORTS_FULL" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
 	echo -e "\t${GREEN}Full scan completed and results saved in $FULL_OUTPUT_FILE${NC}"
 }
 
@@ -90,7 +91,14 @@ open_ports_grep(){
 	else
 		open_ports=$(less $1 | grep -E "[0-9]+/$2")
 		open_ports=$(echo "$open_ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
-		OPEN_PORTS="$open_ports"
+		if [[ $3 == "full" ]]; then
+			OPEN_PORTS_FULL=$open_ports
+		fi
+		if [[ -z $OPEN_PORTS ]]; then
+			OPEN_PORTS="$open_ports"
+		else
+			OPEN_PORTS="$OPEN_PORTS, $open_ports"
+		fi
 	fi
 }
 
@@ -117,12 +125,10 @@ change_ownership(){
 suggester(){
 	line_spacer
 
-
 	source "${suggester_action_script}/suggester-actions.sh"
 
 	echo -e "${YELLOW}[+]    Suggester${NC}"
-	suggested=0
-
+	
 	if [[ -z "$OPEN_PORTS" ]]; then
 		if $tcp_ignore && ! $udp_scan; then
 			echo -e "\t${RED}Atleast do any one of the following:${NC}
@@ -135,6 +141,8 @@ suggester(){
 		echo -e "\tSuggestion not provided"
 	else
 		IFS=', ' read -ra num_array  <<< "$OPEN_PORTS"
+		suggested_ports=""
+		suggested=0
 
 		declare -A exclusion_ports
 
@@ -142,10 +150,16 @@ suggester(){
 		exclusion_ports[139]=false
 
 		for num in "${num_array[@]}"; do
-			#echo "$num"
+			if [[ $suggested_ports == *"$num,"* || $suggested_ports == *" $num"* ]]; then
+				#echo "Skipping for $num"
+				continue
+			fi
+			
+			suggested_ports="$suggested_ports, $num"
 			if [[ -v PORT_MESSAGES[$num] ]]; then
 				(( suggested++ ))
 				echo -e "${PORT_MESSAGES[$num]}"
+				
 				if [[ ($num == 80 || $num == 443 || $num == 8080) && ${exclusion_ports[80]} == "false" ]]; then
 					if [[ $num == 8080 ]]; then
 						port_80_443 "8080"
@@ -207,11 +221,12 @@ prerequisites(){
 	declare -g FULL_OUTPUT_FILE=$OUTPUT_DIR/full-scan.txt
 	declare -g UDP_OUTPUT_FILE=$OUTPUT_DIR/udp-scan.txt
 	declare -g OPEN_PORTS=""
+	declare -g OPEN_PORTS_FULL=""
 
 	suggester_action_script="$(dirname "$(readlink -f "$0")")"
 	declare -g -A SUGGEST_ACTION_SCRIPT=$suggester_action_script
 
-	ip_validity
+	# ip_validity
 
 	if [ ! -d "$OUTPUT_DIR" ]; then
 		mkdir "$OUTPUT_DIR"
