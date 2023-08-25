@@ -36,6 +36,9 @@ alias sudo="sudo "
 # Restart/Refresh terminal
 source .zshrc
 source .bashrc
+
+# Confirm alias
+alias | grep -E "nms|pyserver"
 ```
 
 ## Usage
@@ -43,11 +46,14 @@ Once you have set up Shelloox, you can start utilizing the available tools and s
 
 ## Screenshots
 - Install Repo
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/437d290b-0934-40ce-aecc-78f803aac6d0)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/8019d402-b35d-41fd-8199-72c1c8f9d516)
+
 - Give executable permissions
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/21e25e9d-0918-4867-afb8-76a56dff1d40)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/c99f82bc-fa95-418d-bc02-cbabc4d8fd77)
+
 - Confirm after setting up alias
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/0bd72db0-27c4-4f57-abe7-83286e3cf0c3)
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/3b2aef3b-12ba-4282-bc7c-8b5a8f92c69a)
+
 
 
 ## Contributing
