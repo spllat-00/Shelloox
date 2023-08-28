@@ -13,32 +13,59 @@ Before getting started with Shelloox, ensure that you have the following prerequ
 
 ## Installation:
 To use Shelloox, follow these steps to set up the repository on your local machine:
-
+### Automatic Setup
 1. Clone the repository to your desired directory using the following command:
 ```bash
 sudo git clone https://github.com/spllat-00/Shelloox.git /opt/Shelloox; cd /opt/Shelloox
 ```
-2. Setup permissions
+2. Give permission to `setup.sh`
+```bash
+sudo chmod +x /opt/Shelloox/setup.sh
+```
+3. Run `setup.sh`
+```bash
+sudo /opt/Shelloox/setup.sh
+```
+
+### Manual Setup
+1. Clone the repository to your desired directory using the following command:
+```bash
+sudo git clone https://github.com/spllat-00/Shelloox.git
+```
+2. Change directory into folder
+```bash
+cd <FULL_GIT_REPO_PATH>
+```
+3. Setup permissions (Warning: Run inside Git Repo)
 ```bash
 sudo find . -type f -name 'script-*.sh' -exec chmod +x {} \;
 ```
-3. Optional : Setting up alias, in .zshrc or .bashrc
+OR
+```bash
+sudo find <FULL_GIT_REPO_PATH> -type f -name 'script-*.sh' -exec chmod +x {} \;
+```
+4. Optional : Setting up alias, in .zshrc or .bashrc
 ```bash
 # nmap script
-alias nms="/opt/Shelloox/nmap/script-nmap-auto.sh"
+alias nms="<FULL_GIT_REPO_PATH>/nmap/script-nmap-auto.sh"
 
 # python server
-alias pyserver="/opt/Shelloox/PyServer/script-python-server.sh"
+alias pyserver="<FULL_GIT_REPO_PATH>/PyServer/script-python-server.sh"
 
 # Running as sudo
 alias sudo="sudo "
+```
 
-# Restart/Refresh terminal
+### To access terminal
+Either `restart the terminal` or else run:
+```bash
 source .zshrc
 source .bashrc
+```
 
-# Confirm alias
-alias | grep -E "nms|pyserver"
+### Confirm alias setup
+```bash
+alias | grep -E "nms|pyserver|sudo"
 ```
 
 ## Usage
@@ -49,11 +76,18 @@ Once you have set up Shelloox, you can start utilizing the available tools and s
 ![image](https://github.com/spllat-00/Shelloox/assets/50944153/8019d402-b35d-41fd-8199-72c1c8f9d516)
 
 - Give executable permissions
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/c99f82bc-fa95-418d-bc02-cbabc4d8fd77)
+  - Automatic
+     - Permission
+       ![image](https://github.com/spllat-00/Shelloox/assets/50944153/505e45b8-764d-43bd-9b00-41093323fcf5)
+     - Run `setup.sh`
+       ![image](https://github.com/spllat-00/Shelloox/assets/50944153/38b7e54e-aa40-478a-b9ca-a869e8be5c8e)
+  - Manual
+     - Give Permissions 
+       ![image](https://github.com/spllat-00/Shelloox/assets/50944153/c99f82bc-fa95-418d-bc02-cbabc4d8fd77)
+     - Add alias to `.zshrc` or `.bashrc`
 
-- Confirm after setting up alias
-![image](https://github.com/spllat-00/Shelloox/assets/50944153/3b2aef3b-12ba-4282-bc7c-8b5a8f92c69a)
-
+- Confirm after setting up alias and restarting terminal
+![image](https://github.com/spllat-00/Shelloox/assets/50944153/5e001466-edb9-4521-a6d6-bc13bef74b63)
 
 
 ## Contributing
@@ -66,5 +100,5 @@ Thank you for using Shelloox! We hope these tools and scripts streamline your ta
 
 ## TO DO
 - [ ] Windows compatibility
-- [ ] Check if an alias is set
+- [x] ~~Check if an alias is set~~
 - [x] ~~Help flag functionality~~
