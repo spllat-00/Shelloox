@@ -171,7 +171,15 @@ give_permissions(){
 	topic_spacer
 	echo -e "${YELLOW}[+]    File Permissions${NC}"
 	#find /opt/Shelloox -type f -name 'script-*.sh' -exec chmod +x {} \;
-	sudo find /opt/Shelloox -type f -name 'script-*.sh' -exec chmod +x {} \; -exec echo -e "\tUpdated: ${GREEN}{}${NC}" \;
+	#sudo find /opt/Shelloox -type f -name 'script-*.sh' -exec chmod +x {} \; -exec echo -e "\tUpdated: ${GREEN}{}${NC}" \;
+	for file in $(find /opt/Shelloox -type f -name 'script-*.sh'); do
+		if [ -x "$file" ]; then
+			echo -e "\t${GREY}File '$file' already has executable mode.${NC}"
+		else
+			chmod +x "$file"
+			echo -e "\tUpdated: ${GREEN}$file${NC} (given executable permission)."
+		fi
+	done
 }
 
 reload_help(){
@@ -212,6 +220,8 @@ BLUE="${C}[1;34m"
 LIGHT_CYAN="${C}[0;36m"
 BLUE_GREEN="${C}[1;32m"
 GREEN="${C}[38;5;47m"
+
+GREY="${C}[38;5;247m"
 
 BOLD="${C}[1m"
 ITALIC="${C}[3m"
