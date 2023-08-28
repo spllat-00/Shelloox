@@ -16,6 +16,7 @@ function_add_zsh_bash(){
 	sudo sh -c "echo \"alias $1\" >> /etc/bash.bashrc"
 	echo -e "\t\tAlias: ${ORNAGE_BROWN}$1${NC} will be set."
 	echo -e "\t\tUser can access the alias with ${GREEN}$2${NC}"
+	aliasChanged=true
 }
 
 function_comment_alias(){
@@ -26,11 +27,10 @@ function_comment_alias(){
 
 function_nms_check(){
 	echo -e "\t${YELLOW}[-]    NMS Check${NC}"
-	
 	if [[ $1 ]]; then
-		if [[ $2 = "nms='/opt/Shelloox/nmap/script-nmap-auto.sh'" ]]; then
+		if [[ $1 = "alias nms='/opt/Shelloox/nmap/script-nmap-auto.sh'" ]]; then
 			echo -e "\t\t${GREEN}Alias Present.${NC} No need to add alias for: ${GREEN}nms${NC}"
-			aliasChanged=false
+			
 		else
 			echo -e "\t\t${RED_PINK}Alias \`${LIGHT_MAGENTA}nms${NC}${RED_PINK}\` is already present.${NC}"
 			echo -e "\t\tCurrent Value: ${LIGHT_MAGENTA}$2${NC}"
@@ -84,9 +84,8 @@ function_pyserver_check(){
 	echo -e "\t${YELLOW}[-]    PyServer Check${NC}"
 	
 	if [[ $1 ]]; then
-		if [[ $2 = "pyserver='/opt/Shelloox/PyServer/script-python-server.sh'" ]]; then
+		if [[ $1 = "alias pyserver='/opt/Shelloox/PyServer/script-python-server.sh'" ]]; then
 			echo -e "\t\t${GREEN}Alias Present.${NC} No need to add alias for: ${GREEN}pyserver${NC}"
-			aliasChanged=false
 		else
 			echo -e "\t\t${RED_PINK}Alias \`${LIGHT_MAGENTA}pyserver${NC}${RED_PINK}\` is already present.${NC}"
 			echo -e "\t\tCurrent Value: ${LIGHT_MAGENTA}$2${NC}"
@@ -136,8 +135,9 @@ function_pyserver_check(){
 function_sudo_check(){
 	echo -e "\t${YELLOW}[-]    Sudo Check${NC}"
 	if [[ $1 ]]; then
-		echo -e "\t\t${RED_PINK}Alias \`${LIGHT_MAGENTA}sudo${NC}${RED_PINK}\` is already present.${NC}"
-		echo -e "\t\tCurrent Value: ${LIGHT_MAGENTA}$2${NC}"
+		if [[ $1 = "alias sudo='sudo '" ]]; then
+			echo -e "\t\t${GREEN}Alias Present.${NC} No need to add alias for: ${GREEN}sudo${NC}"
+		fi
 	else
 		echo -e "\t\tAlias \`${LIGHT_MAGENTA}sudo${NC}\` doesn't exist"
 		alias_message="sudo='sudo '"
@@ -154,11 +154,11 @@ alias_setup(){
 	pyserver_check=$(bash -i -c "alias | grep -E 'pyserver' | grep -vE '^#'") # PYSERVER check
 	sudo_check=$(bash -i -c "alias | grep -E 'sudo' | grep -vE '^#'") # sudo check
 
-	function_nms_check $nms_check
+	function_nms_check "$nms_check"
 	echo
-	function_pyserver_check $pyserver_check
+	function_pyserver_check "$pyserver_check"
 	echo
-	function_sudo_check $sudo_check
+	function_sudo_check "$sudo_check"
 
 }
 
@@ -222,7 +222,7 @@ NC="${C}[0m"
 # --------------------------RUNNER CODE--------------------------
 
 # Global Variables
-aliasChanged=true
+aliasChanged=false
 
 print_banner
 print_help
