@@ -1,36 +1,43 @@
 #!/bin/bash
 
-# ================================
+# =======================================================
+#           NOTE TO DEVELOPER
+# --------------------------------
+# --- If creating a function or using echo function
+# --- use "$tee_command" to store the output in
+# --- OUTPUT_DIR/suggester_log.txt
+# =======================================================
+
+# =======================================================
 #           Functions
-# ================================
+# =======================================================
 port_80_443(){
 	mediumDirectory=$(locate -r '.*directory-list.*medium.' | grep -m 1 -v 'lowercase')
 	subdomain5000=$(locate -r .*DNS.*subdomains-top1million-5000.txt | head -n 1)
-	
-	echo -e "\t\tTo know other files for \"$LIGHT_MAGENTA-w$NC\", try running: ${RED}$0 --files${NC}\n"
-	
+	echo -e "\t\tTo know other files for \"$LIGHT_MAGENTA-w$NC\", try running: ${RED}$0 --files${NC}\n" | $tee_command
+
 	# ------ DIR Busting ------
 	if ! [[ -n "$mediumDirectory" ]]; then
 		mediumDirectory="<PATH_TO_DIR/subdomains-top1million-5000.txt>"
 	fi
-	echo -e "\t\tUse gobuster to search for ${DULL_YELLOW}hidden directories${NC}:"
-	echo -e "\t\t ${LIGHT_MAGENTA}gobuster dir -u http://$IP_ADDRESS${1:+:}$1 -w $mediumDirectory -t 20${NC}"
+	echo -e "\t\tUse gobuster to search for ${DULL_YELLOW}hidden directories${NC}:" | $tee_command
+	echo -e "\t\t ${LIGHT_MAGENTA}gobuster dir -u http://$IP_ADDRESS${1:+:}$1 -w $mediumDirectory -t 20 -o $OUTPUT_DIR/gobuster-dir${1:+:}$1.out${NC}" | $tee_command
 
 	# ------ VHOST ------
 	if ! [[ -n "$subdomain5000" ]]; then
 		subdomain5000="<PATH_TO_DNS/subdomains-top1million-5000.txt>"
 	fi
-	echo -e "\t\tUse gobuster to search for ${DULL_YELLOW}virtual hosts${NC}:"
-	echo -e "\t\t ${LIGHT_MAGENTA}gobuster vhost -u http://$IP_ADDRESS${1:+:}$1 -w $subdomain5000 -t 20${NC}"
+	echo -e "\t\tUse gobuster to search for ${DULL_YELLOW}virtual hosts${NC}:" | $tee_command
+	echo -e "\t\t ${LIGHT_MAGENTA}gobuster vhost -u http://$IP_ADDRESS${1:+:}$1 -w $subdomain5000 -t 20 -o $OUTPUT_DIR/gobuster-vhost${1:+:}$1.out${NC}" | $tee_command
 
 	# ------ DNS ------
-	echo -e "\t\tUse ffuf to gather information about ${DULL_YELLOW}DNS${NC}:"
-	echo -e "\t\t   Check for various filters: ${RED}ffuf -h${NC} => Useful: ${DULL_YELLOW}-f*${NC} / ${DULL_YELLOW}-m*${NC}"
+	echo -e "\t\tUse ffuf to gather information about ${DULL_YELLOW}DNS${NC}:" | $tee_command
+	echo -e "\t\t   Check for various filters: ${RED}ffuf -h${NC} => Useful: ${DULL_YELLOW}-f*${NC} / ${DULL_YELLOW}-m*${NC}" | $tee_command
 	if $IS_DOMAIN; then
-		echo -e "\t\t ${LIGHT_MAGENTA}ffuf -u http://$IP_ADDRESS/ -H \"HOST: FUZZ.$IP_ADDRESS\" -w $subdomain5000${NC}"
+		echo -e "\t\t ${LIGHT_MAGENTA}ffuf -u http://$IP_ADDRESS/ -H \"HOST: FUZZ.$IP_ADDRESS\" -w $subdomain5000 -o $OUTPUT_DIR/ffuf.out${NC}" | $tee_command
 	else
-		echo -e "\t\t   ${RED}Need domain name${NC}"
-		echo -e "\t\t ${LIGHT_MAGENTA}ffuf -u http://$IP_ADDRESS/ -H \"HOST: FUZZ.${RED}domain_name.goes_here${LIGHT_MAGENTA}\" -w $subdomain5000${NC}"
+		echo -e "\t\t   ${RED}Need domain name${NC}" | $tee_command
+		echo -e "\t\t ${LIGHT_MAGENTA}ffuf -u http://$IP_ADDRESS/ -H \"HOST: FUZZ.${RED}domain_name.goes_here${LIGHT_MAGENTA}\" -w $subdomain5000 -o $OUTPUT_DIR/ffuf.out${NC}" | $tee_command
 	fi
 
 }

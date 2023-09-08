@@ -107,7 +107,6 @@ change_ownership(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Ownership${NC}"
 	current_directory=$(pwd)
-	#echo "current_directory: $current_directory"
 	path="${current_directory#/}"
 	IFS='/' read -r -a parts <<< "$path"
 
@@ -127,18 +126,26 @@ suggester(){
 
 	source "${suggester_action_script}/suggester-actions.sh"
 
-	echo -e "${YELLOW}[+]    Suggester${NC}"
+	# Define a file to log messages
+	log_file="$OUTPUT_DIR/suggester_log.txt"
 	
+	> "$log_file"
+	
+	tee_command="tee -a $log_file -i"
+	
+	echo -e "\nUser ran ${RED}nms${NC} program with:\n\t${DULL_YELLOW}$RUN_COMMAND${NC}\n${LIGHT_BLUE}-------------------------------------------${NC}" >> $log_file
+	echo -e "${YELLOW}[+]    Suggester${NC}" | $tee_command
+
 	if [[ -z "$OPEN_PORTS" ]]; then
 		if $tcp_ignore && ! $udp_scan; then
 			echo -e "\t${RED}Atleast do any one of the following:${NC}
 		${RED}1. Fast Scan ( -fa )${NC}
 		${RED}2. Full Scan ( -fu )${NC}
-		${RED}3. UDP scan  ( -U  )${NC}"
+		${RED}3. UDP scan  ( -U  )${NC}" | $tee_command
 		else
-			echo -e "\t${RED}Sorry! Quick Ports scan Failed.\n\tCreate an issue on GitHub: ( ${GITHUB}/issues ) preferred with screenshot of output${NC}"
+			echo -e "\t${RED}Sorry! Quick Ports scan Failed.\n\tCreate an issue on GitHub: ( ${GITHUB}/issues ) preferred with screenshot of output${NC}" | $tee_command
 		fi
-		echo -e "\tSuggestion not provided"
+		echo -e "\tSuggestion not provided" | $tee_command
 	else
 		IFS=', ' read -ra num_array  <<< "$OPEN_PORTS"
 		suggested_ports=""
@@ -151,14 +158,14 @@ suggester(){
 
 		for num in "${num_array[@]}"; do
 			if [[ $suggested_ports == *"$num,"* || $suggested_ports == *" $num"* ]]; then
-				#echo "Skipping for $num"
+				#echo "Skipping for $num" | $tee_command
 				continue
 			fi
 			
 			suggested_ports="$suggested_ports, $num"
 			if [[ -v PORT_MESSAGES[$num] ]]; then
 				(( suggested++ ))
-				echo -e "${PORT_MESSAGES[$num]}"
+				echo -e "${PORT_MESSAGES[$num]}" | $tee_command
 				
 				if [[ ($num == 80 || $num == 443 || $num == 8080) && ${exclusion_ports[80]} == "false" ]]; then
 					if [[ $num == 8080 ]]; then
@@ -167,16 +174,16 @@ suggester(){
 						port_80_443
 					fi 
 					exclusion_ports[80]=true
-					echo -e "\t----------------------------------------------------------"
+					echo -e "\t----------------------------------------------------------" | $tee_command
 				elif [[ ($num == 139 || $num == 445) && ${exclusion_ports[139]} == "false" ]]; then
 					exclusion_ports[139]=true
 				fi
 			fi
 		done
 		if [[ $suggested == 0 ]]; then
-			echo -e "\tOpen Ports: $OPEN_PORTS"
-			echo -e "\tSorry! The above ports are not yet added in our database."
-			echo -e "\tCreate an issue with tag:\"${DULL_YELLOW}requried port${NC}\" on ${DULL_YELLOW}${GITHUB}/issues${NC}"
+			echo -e "\tOpen Ports: $OPEN_PORTS" | $tee_command
+			echo -e "\tSorry! The above ports are not yet added in our database." | $tee_command
+			echo -e "\tCreate an issue with tag:\"${DULL_YELLOW}requried port${NC}\" on ${DULL_YELLOW}${GITHUB}/issues${NC}" | $tee_command
 		fi
 	fi
 }
@@ -220,13 +227,14 @@ prerequisites(){
 	declare -g FULL_PORTS_FILE=$OUTPUT_DIR/full-ports.txt
 	declare -g FULL_OUTPUT_FILE=$OUTPUT_DIR/full-scan.txt
 	declare -g UDP_OUTPUT_FILE=$OUTPUT_DIR/udp-scan.txt
+	
 	declare -g OPEN_PORTS=""
 	declare -g OPEN_PORTS_FULL=""
 
 	suggester_action_script="$(dirname "$(readlink -f "$0")")"
 	declare -g -A SUGGEST_ACTION_SCRIPT=$suggester_action_script
 
-	# ip_validity
+	ip_validity
 
 	if [ ! -d "$OUTPUT_DIR" ]; then
 		mkdir "$OUTPUT_DIR"
@@ -340,6 +348,12 @@ show_files(){
 	fi
 }
 
+fa_fu_warning(){
+	echo -e "${RED}ERROR: -fa and -fu cannot be provided together${NC}"
+	echo -e "\t${ORANGE}Instead don't provided any options${NC}"
+	exit 1
+}
+
 # Alias set for easy of use
 : << COMMENT_TO_DO
 alias_check(){
@@ -371,6 +385,8 @@ NC="${C}[0m"
 ITALIC="${C}[3m"
 BACKGROUND_YELLOW="${C}[43m"
 BLINK_RED="${C}[5;31m"
+LIGHT_BLUE="${C}[38;5;159m"
+ORANGE="${C}[38;5;172m"
 
 underline="${C}[4m"
 
@@ -385,6 +401,7 @@ split_scan=false
 
 # Variables
 GITHUB="https://github.com/spllat-00/Shelloox"
+RUN_COMMAND="$0 $@"
 
 # Flag handling using getopts
 while [[ $# -gt 0 ]]; do
@@ -412,8 +429,7 @@ while [[ $# -gt 0 ]]; do
 			fast_scan=true
 			full_scan=false
 			if [[ -n $selected_function ]]; then
-				echo -e "${RED}ERROR: -fa and -fu cannot be provided together${NC}"
-				exit 1
+				fa_fu_warning
 			fi
 			selected_function="fa"
 		;;
@@ -421,8 +437,7 @@ while [[ $# -gt 0 ]]; do
 			full_scan=true
 			fast_scan=false
 			if [[ -n $selected_function ]]; then
-				echo -e "${RED}ERROR: -fa and -fu cannot be provided together${NC}"
-				exit 1
+				fa_fu_warning
 			fi
 			selected_function="fu"
 		;;
@@ -465,6 +480,7 @@ if $show_banner; then
 else
 	echo ""
 fi
+command_run="$0 $1 $2 $3"
 
 # Required checks
 user_os_checks
