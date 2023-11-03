@@ -90,7 +90,7 @@ open_ports_grep(){
 		echo "Empty Argument, need file"
 	else
 		open_ports=$(less $1 | grep -E "[0-9]+/$2")
-		open_ports=$(echo "$open_ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
+		open_ports=$(echo "$open_ports" | grep '^[0-9]'| awk '{print $1}' | sed 's/\/.*$//' | sed ':a;N;$!ba;s/\n/, /g')
 		if [[ $3 == "full" ]]; then
 			OPEN_PORTS_FULL=$open_ports
 		fi
