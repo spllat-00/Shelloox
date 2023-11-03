@@ -18,7 +18,7 @@ print_banner(){
 perform_fast_scan(){
 	line_spacer
 	echo -e "${YELLOW}[+]    Starting fast scan${NC}"
-	nmap -T4 -F -Pn "$IP_ADDRESS" -oN "$FAST_OUTPUT_FILE"
+	nmap -T4 --min-rate 2000 -Pn "$IP_ADDRESS" -oN "$FAST_OUTPUT_FILE"
 
 	#fast_ports=$(less $FAST_OUTPUT_FILE | grep -E "[0-9]+/tcp")
 	#fast_ports=$(echo "$fast_ports" | awk '{print $1}' | awk -F '/' '{print $1}' | sed ':a;N;$!ba;s/\n/, /g')
@@ -46,7 +46,7 @@ perform_full_scan(){
 # Quick Scan
 all_ports_finder(){
 	echo -e "\t${YELLOW}[-]    Searching open ports${NC}"
-	nmap --min-rate 5000 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE"
+	nmap --min-rate 1500 -Pn -p- -T4 "$IP_ADDRESS" -oN "$FULL_PORTS_FILE"
 
 	open_ports_grep $FULL_PORTS_FILE "tcp" "full"
 
@@ -57,7 +57,7 @@ all_ports_finder(){
 full_ports_scan(){
 	echo -e "\t${YELLOW}[-]    Service Enumeration${NC}" >&2
 
-	nmap -sC -sV -Pn -p "$OPEN_PORTS_FULL" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
+	nmap -sC -sV --min-rate 500 -Pn -p "$OPEN_PORTS_FULL" "$IP_ADDRESS" -oN "$FULL_OUTPUT_FILE"
 	echo -e "\t${GREEN}Full scan completed and results saved in $FULL_OUTPUT_FILE${NC}"
 }
 
@@ -150,6 +150,7 @@ suggester(){
 		IFS=', ' read -ra num_array  <<< "$OPEN_PORTS"
 		suggested_ports=""
 		suggested=0
+		skipped_ports=""
 
 		declare -A exclusion_ports
 
@@ -178,12 +179,20 @@ suggester(){
 				elif [[ ($num == 139 || $num == 445) && ${exclusion_ports[139]} == "false" ]]; then
 					exclusion_ports[139]=true
 				fi
+			else
+				skipped_ports="${skipped_ports}${skipped_ports:+, }$num"
 			fi
 		done
+		if [ -n "$skipped_ports" ] && [ $suggested -ne 0 ]; then
+			echo -e "\n\t${YELLOW}[-]    Skipped Ports${NC}"
+			echo -e "\t\t$skipped_ports"
+		fi
+		
 		if [[ $suggested == 0 ]]; then
+			echo -e "\n\t${YELLOW}[-]    Failed Ports${NC}"
 			echo -e "\tOpen Ports: $OPEN_PORTS" | $tee_command
 			echo -e "\tSorry! The above ports are not yet added in our database." | $tee_command
-			echo -e "\tCreate an issue with tag:\"${DULL_YELLOW}requried port${NC}\" on ${DULL_YELLOW}${GITHUB}/issues${NC}" | $tee_command
+			echo -e "\tCreate an issue with tag:\"${RED}requried port${NC}\" on ${DULL_YELLOW}${GITHUB}/issues${NC}" | $tee_command
 		fi
 	fi
 }
@@ -387,6 +396,7 @@ BACKGROUND_YELLOW="${C}[43m"
 BLINK_RED="${C}[5;31m"
 LIGHT_BLUE="${C}[38;5;159m"
 ORANGE="${C}[38;5;172m"
+DARK_GREEN="${C}[38;5;28m"
 
 underline="${C}[4m"
 
